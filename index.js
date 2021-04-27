@@ -1,5 +1,6 @@
-import {AppRegistry, Text, View, Animated, Image, TouchableOpacity, Dimensions} from 'react-native';
+import {AppRegistry, Text, View, Animated, Image, TouchableOpacity, Dimensions, StyleSheet} from 'react-native';
 import React from 'react';
+import Sound from 'react-native-sound'
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
@@ -11,6 +12,10 @@ const gridSize = (windowWidth - margin * 2) / gridCountHori;
 const gridStartX = margin;
 const gridStartY = margin;
 
+let musicPath = require('./resources/14226.mp3')
+var music = new Sound(musicPath, (error) => {
+
+})
 
 export default class App extends React.Component {
   constructor(props) {
@@ -103,12 +108,7 @@ export default class App extends React.Component {
           onPress={() => { this.onPressDirection(0); }}
         >
         <View
-          style={{
-          width: 70,
-          height: 70,
-          borderWidth: 1,
-          borderColor: 'black'
-          }}>
+          style={styles.control}>
         </View>
         </TouchableOpacity>
         <View
@@ -122,36 +122,23 @@ export default class App extends React.Component {
           onPress={() => { this.onPressDirection(3); }}
         >
         <View
-          style={{
-          width: 70,
-          height: 70,
-          borderWidth: 1,
-          borderColor: 'black'
-          }}>
+          style={
+            styles.control
+          }>
         </View>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => { this.onPressDirection(2); }}
         >
         <View
-          style={{
-          width: 70,
-          height: 70,
-          borderWidth: 1,
-          borderColor: 'black'
-          }}>
+          style={styles.control}>
         </View>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => { this.onPressDirection(1); }}
         >
         <View
-          style={{
-          width: 70,
-          height: 70,
-          borderWidth: 1,
-          borderColor: 'black'
-          }}>
+          style={styles.control}>
         </View>
         </TouchableOpacity>
 
@@ -159,8 +146,13 @@ export default class App extends React.Component {
     );
   }
 
+  musicSound(s) {
+    music.play();
+  }
+
   render() {
     if (!this.state.started) {
+      this.musicSound(1)
       return (
         <View
           style={{
@@ -202,10 +194,12 @@ export default class App extends React.Component {
   }
 
   onPress() {
+    this.musicSound(1)
     this.setState({started: true});
   }
 
   onPressDirection(d) {
+    this.musicSound(1)
     if ((this.state.direction + 1) % 4 == d) {
       this.setState({direction: this.state.direction + 1});
     } else if ((this.state.direction - 1) % 4 == d) {
@@ -232,6 +226,7 @@ export default class App extends React.Component {
       resultData.cornerPoints.unshift(curHead);
     }
     if (nextPos.row == this.state.food.row && nextPos.column == this.state.food.column) { //吃食物
+      this.musicSound(1);
       resultData.count = resultData.count + 1;
       var randomRow = Math.floor(Math.random() * gridCountVertical);
       var randomColumn = Math.floor(Math.random() * gridCountHori);
@@ -254,5 +249,14 @@ export default class App extends React.Component {
     }, 150);
   }
 }
+
+const styles = StyleSheet.create({
+  control: {
+    width: 70,
+    height: 70,
+    borderWidth: 1,
+    borderColor: 'black'
+  }
+});
 
 AppRegistry.registerComponent('rn61', () => App);
