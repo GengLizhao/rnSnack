@@ -1,4 +1,4 @@
-import {AppRegistry, Text, View, Animated, Image, TouchableOpacity, Dimensions, StyleSheet} from 'react-native';
+import {AppRegistry, Text, View, Animated, Image, TouchableOpacity, Dimensions, StyleSheet, PanResponder} from 'react-native';
 import React from 'react';
 import Sound from 'react-native-sound'
 
@@ -12,16 +12,34 @@ const gridSize = (windowWidth - margin * 2) / gridCountHori;
 const gridStartX = margin;
 const gridStartY = margin;
 
-let musicPath = require('./resources/14226.mp3')
-var music = new Sound(musicPath, (error) => {
+var musicPath = require('./resources/14226.mp3')
+var musicPlayer = new Sound(musicPath, (error) => {})
 
-})
+musicPath = require('./resources/gamestart.mp3')
+var gamestartPlayer = new Sound(musicPath, (error) => {})
+
+musicPath = require('./resources/click.mp3')
+var clickPlayer = new Sound(musicPath, (error) => {})
+
+musicPath = require('./resources/gameover.mp3')
+var gameoverPlayer = new Sound(musicPath, (error) => {})
+
+musicPath = require('./resources/eat.mp3')
+var eatPlayer = new Sound(musicPath, (error) => {})
+
+musicPath = require('./resources/speedchange.mp3')
+var speedPlayer = new Sound(musicPath, (error) => {})
 
 export default class App extends React.Component {
+
   constructor(props) {
     super(props);
     this.state = {
+      moveSpeed: 500,
+      firstStart: true,
+      score: 0,
       started: false,
+      gameOver: false,
       direction: 40001,
       food: {row: 40, column: 25},
       data: {head: {row: 10, column: 10}, cornerPoints: [{row: 10, column: 7}, {row: 15, column: 7}], count: 9}
@@ -81,6 +99,24 @@ export default class App extends React.Component {
         borderColor: 'grey',
         borderWidth: 1,
         backgroundColor: 'black'
+        }}>
+      </View>
+    );
+  }
+
+  getGameOverBodyItemView(row, column) {
+    return (
+      <View
+        key={'' + row + column}
+        style={{
+        position: 'absolute',
+        left: gridStartX + column * gridSize,
+        top: gridStartY + row * gridSize,
+        width: gridSize,
+        height: gridSize,
+        borderColor: 'grey',
+        borderWidth: 1,
+        backgroundColor: 'red'
         }}>
       </View>
     );
@@ -146,13 +182,45 @@ export default class App extends React.Component {
     );
   }
 
+  getScoreView() {
+    return <View style = {styles.score}>
+      <Text style = {{color:'red'}}>分数:{this.state.score}</Text>
+    </View>
+  }
+
   musicSound(s) {
-    music.play();
+
+    switch (s) {
+      // 开场音乐
+      case 0:
+      gamestartPlayer.play();
+      break;
+      // 点击声音
+      case 1:
+      clickPlayer.play();
+      break;
+      // 吃食物
+      case 2:
+      eatPlayer.play();
+      break;
+      // 速度变化
+      case 3:
+      speedPlayer.play();
+      break;
+      // 结束
+      case 6:
+      gameoverPlayer.play()
+      break;
+    }
+
   }
 
   render() {
     if (!this.state.started) {
-      this.musicSound(1)
+      if(this.state.firstStart) {
+        this.musicSound(0)
+        this.state.firstStart = false
+      }
       return (
         <View
           style={{
@@ -161,11 +229,12 @@ export default class App extends React.Component {
           alignItems: "center",
           backgroundColor: '#f5f5f5'
           }}>
-          <Image source={require('./resources/start.png')}></Image>
+          <Image source={require('./resources/start.png')} style = {styles.backgroundImage}></Image>
           <TouchableOpacity
             onPress={() => { this.onPress(); }}
           >
             <Text style={{color: 'green', fontSize: 40, fontWeight: '800'}}>开始</Text>
+            { this.getScoreView() }
           </TouchableOpacity>
         </View>
       );
@@ -173,29 +242,44 @@ export default class App extends React.Component {
 
     //绘制snack
     var items = this.getBodyItemsPositon();
-    var snackView = items.map((data) => {
+
+    // 游戏结束
+    if (this.state.gameOver) {
+      this.musicSound(6)
+      let snackView = items.map((data) => {
+        return this.getGameOverBodyItemView(data.row, data.column);
+      });
+      return (
+        <View
+          style={styles.game}>
+          <View style={{borderWidth: 5, borderColor: 'black', position: 'absolute', left: margin - 3, top: margin - 3, width: windowWidth - margin * 2 + 6, height: gridCountVertical * gridSize + 6}}/>
+            { snackView }
+            { this.getScoreView() }
+        </View>
+      );
+    }
+
+    let snackView = items.map((data) => {
       return this.getBodyItemView(data.row, data.column);
     });
-
     return (
       <View
-        style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: 'grey'
-        }}>
+        style={styles.game}>
         <View style={{borderWidth: 5, borderColor: 'black', position: 'absolute', left: margin - 3, top: margin - 3, width: windowWidth - margin * 2 + 6, height: gridCountVertical * gridSize + 6}}/>
         { snackView }
         { this.getBodyItemView(this.state.food.row, this.state.food.column) }
         { this.getControlView() }
+        { this.getScoreView() }
       </View>
     );
   }
 
   onPress() {
+    this.state.score = 0
+    this.state.gameOver = false
     this.musicSound(1)
     this.setState({started: true});
+    this.gameStart();
   }
 
   onPressDirection(d) {
@@ -226,29 +310,65 @@ export default class App extends React.Component {
       resultData.cornerPoints.unshift(curHead);
     }
     if (nextPos.row == this.state.food.row && nextPos.column == this.state.food.column) { //吃食物
-      this.musicSound(1);
+      this.musicSound(2);
+      this.state.score++;
+      if (this.state.score % 5 == 0) {
+        this.musicSound(3);
+        this.speedUp()
+      }
       resultData.count = resultData.count + 1;
       var randomRow = Math.floor(Math.random() * gridCountVertical);
       var randomColumn = Math.floor(Math.random() * gridCountHori);
       this.setState({food: {row: randomRow, column: randomColumn}});
     }
     if (nextPos.row < 0 || nextPos.row >= gridCountVertical || nextPos.column < 0 || nextPos.column >= gridCountHori) { //死1
-      clearInterval(this.timer);
+      this.gameOver();
       return;
     }
     if (this.getBodyItemsPositon().findIndex((e) => e.row == nextPos.row && e.column == nextPos.column) != -1) { //死2
-      clearInterval(this.timer);
+      this.gameOver();
       return;
     }
     this.setState({data: resultData});
   }
 
-  componentDidMount() {
+  // 游戏结束
+  gameOver() {
+    clearInterval(this.timer);
+    this.setState({gameOver: true});
+    setTimeout(()=> {
+      this.setState({started: false});
+    }, 3000)
+    
+  }
+
+  // 游戏开始
+  gameStart() {
+    let data = {head: {row: 10, column: 10}, cornerPoints: [{row: 10, column: 7}, {row: 15, column: 7}], count: 9}
+    this.state.data = data
     this.timer = setInterval(() => {
       this.next();
-    }, 150);
+    }, this.state.moveSpeed);
+  }
+
+  // 游戏加速
+  speedUp() {
+    this.state.moveSpeed -= 100;
+    if(this.state.moveSpeed == 0) {
+      this.state.moveSpeed = 500;
+    }
+    clearInterval(this.timer);
+    this.timer = setInterval(() => {
+      this.next();
+    }, this.state.moveSpeed);
+  }
+
+  componentDidMount() {
+    console.log('componentDidMount');
   }
 }
+
+
 
 const styles = StyleSheet.create({
   control: {
@@ -256,7 +376,32 @@ const styles = StyleSheet.create({
     height: 70,
     borderWidth: 1,
     borderColor: 'black'
-  }
+  },
+
+  score: {
+    width: 100,
+    height: 30,
+    borderWidth: 1,
+    borderColor: "red",
+    alignItems: 'center',
+    justifyContent: "center"
+  },
+
+  game: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: 'grey'
+  },
+
+  backgroundImage:{
+    width:100,
+    height: 100,
+    //背景图像的缩放类型: 包含(contain),拉伸(stretch)
+    resizeMode:'center'
+  },
+
+
 });
 
 AppRegistry.registerComponent('rn61', () => App);
