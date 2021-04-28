@@ -15,6 +15,9 @@ const gridStartY = margin;
 var musicPath = require('./resources/14226.mp3')
 var musicPlayer = new Sound(musicPath, (error) => {})
 
+musicPath = require('./resources/welcome.mp3')
+var welcomePlayer = new Sound(musicPath, (error) => {})
+
 musicPath = require('./resources/gamestart.mp3')
 var gamestartPlayer = new Sound(musicPath, (error) => {})
 
@@ -98,7 +101,6 @@ export default class App extends React.Component {
     super(props);
     this.state = {
       moveSpeed: 500,
-      firstStart: true,
       score: 0,
       started: false,
       gameOver: false,
@@ -256,7 +258,7 @@ export default class App extends React.Component {
     switch (s) {
       // 开场音乐
       case 0:
-      gamestartPlayer.play();
+      welcomePlayer.play();
       break;
       // 点击声音
       case 1:
@@ -265,6 +267,10 @@ export default class App extends React.Component {
       // 吃食物
       case 2:
       eatPlayer.play();
+      break;
+      // 开始
+      case 3:
+      gamestartPlayer.play();
       break;
       // 速度变化
       case 3:
@@ -280,10 +286,6 @@ export default class App extends React.Component {
 
   render() {
     if (!this.state.started) {
-      if(this.state.firstStart) {
-        this.musicSound(0)
-        this.state.firstStart = false
-      }
       return (
         <View
           style={{
@@ -328,8 +330,12 @@ export default class App extends React.Component {
     });
     return (
       <View
-        style={styles.game} {...this._panResponder.panHandlers}>
-        <View style={{borderWidth: 5, borderColor: 'black', position: 'absolute', left: margin - 3, top: margin - 3, width: windowWidth - margin * 2 + 6, height: gridCountVertical * gridSize + 6}}/>
+        style={styles.game}>
+        <View style={
+          {borderWidth: 5, borderColor: 'black', 
+          position: 'absolute', left: margin - 3, top: margin - 3,
+          width: windowWidth - margin * 2 + 6, height: gridCountVertical * gridSize + 6}}
+          {...this._panResponder.panHandlers}/>
         { snackView }
         { this.getBodyItemView(this.state.food.row, this.state.food.column) }
         { this.getControlView() }
@@ -341,7 +347,7 @@ export default class App extends React.Component {
   onPress() {
     this.state.score = 0
     this.state.gameOver = false
-    this.musicSound(1)
+    this.musicSound(3)
     this.setState({started: true});
     this.gameStart();
   }
@@ -429,6 +435,7 @@ export default class App extends React.Component {
 
   componentDidMount() {
     console.log('componentDidMount');
+    this.musicSound(0);
   }
 }
 
