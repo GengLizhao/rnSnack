@@ -32,6 +32,68 @@ var speedPlayer = new Sound(musicPath, (error) => {})
 
 export default class App extends React.Component {
 
+  _handleStartShouldSetPanResponder = (
+    event,
+    gestureState,
+  ) => {
+    // Should we become active when the user presses down on the circle?
+    return true;
+  };
+
+  _handleMoveShouldSetPanResponder = (
+    event,
+    gestureState,
+  ) => {
+    // Should we become active when the user moves a touch over the circle?
+    return true;
+  };
+
+  _handlePanResponderGrant = (
+    event,
+    gestureState,
+  ) => {
+    console.log('_handlePanResponderGrant');
+  };
+
+  _handlePanResponderMove = (event, gestureState) => {
+    console.log('_handlePanResponderMove');
+
+    let dx = Math.abs(gestureState.dx);
+    let dy = Math.abs(gestureState.dy);
+
+    if(dx > dy) {
+      if (dx > 50) {
+          if (gestureState.dx < 0) {
+            this.onPressDirection(3); 
+          } else {
+            this.onPressDirection(1); 
+          }
+      }
+    } else {
+      if (dy > 50) {
+        if (gestureState.dy < 0) {
+          this.onPressDirection(0); 
+        } else {
+          this.onPressDirection(2); 
+        }
+      }
+    }
+  };
+
+
+  _handlePanResponderEnd = (event, gestureState) => {
+    console.log('_handlePanResponderEnd');
+  };
+
+  _panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: this._handleStartShouldSetPanResponder,
+    onMoveShouldSetPanResponder: this._handleMoveShouldSetPanResponder,
+    onPanResponderGrant: this._handlePanResponderGrant,
+    onPanResponderMove: this._handlePanResponderMove,
+    onPanResponderRelease: this._handlePanResponderEnd,
+    onPanResponderTerminate: this._handlePanResponderEnd,
+  });
+
   constructor(props) {
     super(props);
     this.state = {
@@ -44,6 +106,7 @@ export default class App extends React.Component {
       food: {row: 40, column: 25},
       data: {head: {row: 10, column: 10}, cornerPoints: [{row: 10, column: 7}, {row: 15, column: 7}], count: 9}
     };
+
   }
 
   getBodyItemsPositon() {
@@ -228,10 +291,11 @@ export default class App extends React.Component {
           justifyContent: "center",
           alignItems: "center",
           backgroundColor: '#f5f5f5'
-          }}>
+          }}
+          >
           <Image source={require('./resources/start.png')} style = {styles.backgroundImage}></Image>
           <TouchableOpacity
-            onPress={() => { this.onPress(); }}
+            onPress={() => {this.onPress(); }}
           >
             <Text style={{color: 'green', fontSize: 40, fontWeight: '800'}}>开始</Text>
             { this.getScoreView() }
@@ -264,7 +328,7 @@ export default class App extends React.Component {
     });
     return (
       <View
-        style={styles.game}>
+        style={styles.game} {...this._panResponder.panHandlers}>
         <View style={{borderWidth: 5, borderColor: 'black', position: 'absolute', left: margin - 3, top: margin - 3, width: windowWidth - margin * 2 + 6, height: gridCountVertical * gridSize + 6}}/>
         { snackView }
         { this.getBodyItemView(this.state.food.row, this.state.food.column) }
